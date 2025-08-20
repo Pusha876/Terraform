@@ -121,7 +121,7 @@ variable "location" {
   }
 }
 ```
-- Common Azure tagging pattern (merge fixed and user-provided tags):
+- Common Azure tagging patterclen (merge fixed and user-provided tags):
 ```hcl
 variable "resource_tag" {
   type = map(string)
