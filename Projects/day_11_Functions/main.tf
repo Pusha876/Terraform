@@ -17,6 +17,26 @@ locals {
       description            = "Allow port ${port}"
     }
   }
+
+  # Resolve VM size: explicit string override takes precedence, else from map by environment
+  vm_size = var.vm_size != null && var.vm_size != "" ? var.vm_size : lookup(var.vm_size_by_env, var.environment, "Standard_B1s")
+
+user_location = ["eastus", "westus2", "eastus"]
+default_location = ["centalus"]
+
+unique_locations = distinct(concat(local.user_location, local.default_location))
+
+monthly_costs = [-50, 100, 75, 200]
+positive_costs = [for cost in local.monthly_costs :
+abs(cost)]
+  total_cost = sum(local.positive_costs)
+  max_cost   = max(local.positive_costs...)
+
+current_time = timestamp()
+resource_name = formatdate("YYYYMMDD-HHMMSS", local.current_time)
+tag_date = formatdate("DD-MM-YYYY", local.current_time)
+
+config_content = 
 }
 
 resource "azurerm_resource_group" "rg" {
