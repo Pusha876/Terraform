@@ -37,41 +37,56 @@ resource "azurerm_network_security_group" "nsg" {
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
+  # Allow Standard LB health probes
   security_rule {
-    name                       = "Allow-SSH"
+    name                       = "Allow-HealthProbe-HTTP"
     priority                   = 1001
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "AzureLoadBalancer"
     destination_address_prefix = "*"
-    description                = "Allow SSH"
+    description                = "Allow health probes from Azure Load Balancer on port 80"
   }
   security_rule {
-    name                       = "Allow-HTTP"
+    name                       = "Allow-HealthProbe-HTTPS"
     priority                   = 1002
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "80"
-    source_address_prefix      = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "AzureLoadBalancer"
     destination_address_prefix = "*"
-    description                = "Allow HTTP"
+    description                = "Allow health probes from Azure Load Balancer on port 443"
+  }
+
+  # Allow app traffic from the Internet to backend ports (traffic reaches via LB; NICs have no public IPs)
+  security_rule {
+    name                       = "Allow-HTTP-Internet"
+    priority                   = 1010
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "Internet"
+    destination_address_prefix = "*"
+    description                = "Allow HTTP from Internet"
   }
   security_rule {
-    name                       = "Allow-HTTPS"
-    priority                   = 1003
+    name                       = "Allow-HTTPS-Internet"
+    priority                   = 1011
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "443"
-    source_address_prefix      = "*"
+    source_address_prefix      = "Internet"
     destination_address_prefix = "*"
-    description                = "Allow HTTPS"
+    description                = "Allow HTTPS from Internet"
   }
   tags = local.common_tags
 
