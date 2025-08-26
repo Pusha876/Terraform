@@ -7,9 +7,32 @@ resource "random_pet" "lb_name" {
   separator = "-"
 }
 
+# Generate stable suffixes for DNS labels bound to region + RG name to avoid drifting
+resource "random_string" "lb_dns" {
+  length  = 6
+  upper   = false
+  special = false
+  keepers = {
+    region = var.location
+    rg     = var.rg_name
+  salt   = var.dns_label_salt
+  }
+}
+
+resource "random_string" "nat_dns" {
+  length  = 6
+  upper   = false
+  special = false
+  keepers = {
+    region = var.location
+    rg     = var.rg_name
+  salt   = var.dns_label_salt
+  }
+}
+
 # Resource Group
 resource "azurerm_resource_group" "rg" {
-  name     = "day14-app-rg"
+  name     = var.rg_name
   location = var.location
   tags     = local.common_tags
 }
@@ -100,13 +123,17 @@ resource "azurerm_subnet_network_security_group_association" "subnet_nsg" {
 
 # Public IP for Load Balancer
 resource "azurerm_public_ip" "lb_pip" {
-  name                = "lb-public-ip"
+  name                = "lb-public-ip-${random_pet.lb_name.id}"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
   sku                 = "Standard"
-  zones              = ["1", "2", "3"]
-  domain_name_label = "${azurerm_resource_group.rg.name}-${random_pet.lb_name.id}-lb"
+  zones              = var.zones
+  domain_name_label  = (var.enable_lb_dns_label || var.enable_dns_labels) ? coalesce(var.lb_domain_name_label, lower(replace("${var.rg_name}-${random_string.lb_dns.result}-lb", "_", "-"))) : null
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Load Balancer with frontend IP configuration and backend address pool
@@ -118,6 +145,10 @@ resource "azurerm_lb" "lb" {
   frontend_ip_configuration {
     name                 = "public-ip-config"
     public_ip_address_id = azurerm_public_ip.lb_pip.id
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -158,13 +189,17 @@ resource "azurerm_lb_nat_rule" "ssh" {
 }
 
 resource "azurerm_public_ip" "nat_gw_pip" {
-  name                = "nat-gw-public-ip"
+  name                = "nat-gw-public-ip-${random_pet.lb_name.id}"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
   sku                 = "Standard"
-  zones              = ["1"]
-  domain_name_label = "${azurerm_resource_group.rg.name}-${random_pet.lb_name.id}-nat-gw"
+  zones              = var.zones
+  domain_name_label  = (var.enable_nat_dns_label || var.enable_dns_labels) ? coalesce(var.nat_domain_name_label, lower(replace("${var.rg_name}-${random_string.nat_dns.result}-nat-gw", "_", "-"))) : null
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # nat gateway resource with idle timeout and zone redundancy
@@ -174,7 +209,7 @@ resource "azurerm_nat_gateway" "nat_gw" {
   resource_group_name = azurerm_resource_group.rg.name
   sku_name            = "Standard"
   idle_timeout_in_minutes = 4
-  zones              = ["1"]
+  zones              = var.zones
 }
 
 resource "azurerm_subnet_nat_gateway_association" "subnet_nat_assoc" {
@@ -186,4 +221,8 @@ resource "azurerm_subnet_nat_gateway_association" "subnet_nat_assoc" {
 resource "azurerm_nat_gateway_public_ip_association" "nat_gw_pip_assoc" {
   public_ip_address_id = azurerm_public_ip.nat_gw_pip.id
   nat_gateway_id       = azurerm_nat_gateway.nat_gw.id
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }

@@ -2,9 +2,9 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
   name                = "vmss-terraform"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
-  sku                 = "Standard_B2s"
+  sku                 = var.vm_size
   instances           = 3
-  zones               = ["1"]
+  zones               = var.zones
 
   admin_username = "azureuser"
   admin_ssh_key {
