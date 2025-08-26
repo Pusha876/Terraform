@@ -77,3 +77,7 @@ Thumbs.db
 # Backup files
 *.backup
 *.bak
+
+# Project-local SSH keys (keep public keys, ignore private)
+**/ssh/id_* 
+!**/ssh/*.pub
