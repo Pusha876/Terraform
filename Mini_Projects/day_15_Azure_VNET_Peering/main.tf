@@ -1,0 +1,1 @@
+// Intentionally left empty. Resources are defined in network.tf and vm.tf.
