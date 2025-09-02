@@ -5,7 +5,7 @@ resource "azuread_group" "engineering" {
 
 resource "azuread_group_member" "education" {
   for_each = { for k, u in azuread_user.users : k => u if u.department == "Engineering" }
-    group_object_id  = azuread_group.engineering.object_id
+    group_object_id  = azuread_group.accounting.object_id
     member_object_id = each.value.object_id
 }
 
@@ -25,9 +25,34 @@ resource "azuread_group_member" "engineers" {
     group_object_id  = azuread_group.engineering.object_id
     member_object_id = each.value.object_id
 }
+
+resource "azuread_group" "sales" {
+  security_enabled = true
+    display_name     = "Sales"
+}
+
+resource "azuread_group_member" "salespersons" {
+  for_each = { for k, u in azuread_user.users : k => u if u.job_title == "Salesperson" }
+    group_object_id  = azuread_group.sales.object_id
+    member_object_id = each.value.object_id
+}
+
+resource "azuread_group" "accounting" {
+  security_enabled = true
+    display_name     = "Accounting"
+}
+
+resource "azuread_group_member" "accountants" {
+  for_each = { for k, u in azuread_user.users : k => u if u.job_title == "Accountant" }
+    group_object_id  = azuread_group.accounting.object_id
+    member_object_id = each.value.object_id
+}
+
 output "group_ids" {
   value = {
     engineering_group_id = azuread_group.engineering.id
     managers_group_id    = azuread_group.managers.id
+    sales_group_id       = azuread_group.sales.id
+    accounting_group_id  = azuread_group.accounting.id
   }
 }

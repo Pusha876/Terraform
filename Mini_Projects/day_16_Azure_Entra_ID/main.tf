@@ -2,6 +2,8 @@ data "azuread_domains" "aad_domains" {
     only_initial = true
 }
 
+data "azuread_client_config" "current" {}
+
 locals {
     domain_name = data.azuread_domains.aad_domains.domains.*.domain_name
     users = csvdecode(file("${path.module}/users.csv"))
@@ -31,6 +33,17 @@ resource "azuread_user" "users" {
   department            = each.value.department
   job_title             = each.value.job_title
 
+}
+
+resource "azuread_application" "example" {
+  display_name = "example"
+  owners       = [data.azuread_client_config.current.object_id]
+}
+
+resource "azuread_service_principal" "example" {
+  client_id                    = azuread_application.example.client_id
+  app_role_assignment_required = false
+  owners                       = [data.azuread_client_config.current.object_id]
 }
 
 output "domain_names" {
