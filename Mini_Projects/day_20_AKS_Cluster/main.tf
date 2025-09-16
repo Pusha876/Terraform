@@ -13,15 +13,16 @@ module "ServicePrincipal" {
   ]
 }
 
-resource "azurerm_role_assignment" "sp_role_assignment" {
-  principal_id   = module.ServicePrincipal.service_principal_object_id
-  role_definition_name = "Contributor"
-  scope          = azurerm_resource_group.aks_rg.id
-
-  depends_on = [
-    module.ServicePrincipal
-  ]
-}
+# Temporarily commented out due to authorization issues
+# resource "azurerm_role_assignment" "sp_role_assignment" {
+#   principal_id   = module.ServicePrincipal.service_principal_object_id
+#   role_definition_name = "Contributor"
+#   scope          = azurerm_resource_group.aks_rg.id
+#
+#   depends_on = [
+#     module.ServicePrincipal
+#   ]
+# }
 
 module "keyvault" {
   source                      = "./modules/keyvault"
@@ -33,9 +34,9 @@ module "keyvault" {
   service_principal_tenant_id = module.ServicePrincipal.service_principal_tenant_id
   tags                        = var.common_tags
 
-    depends_on = [
-        azurerm_role_assignment.sp_role_assignment
-    ]
+    # depends_on = [
+    #     azurerm_role_assignment.sp_role_assignment
+    # ]
 }
 
 resource "azurerm_key_vault_secret" "sp_client_id" {
