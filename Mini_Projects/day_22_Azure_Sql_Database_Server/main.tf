@@ -20,3 +20,11 @@ resource "azurerm_mssql_database" "sampledb" {
   server_id = azurerm_mssql_server.mssql_server.id
   tags      = var.common_tags
 }
+
+resource "azurerm_mssql_firewall_rule" "firewall_rule" {
+    name                = "my-firewall-rule"
+    server_id           = azurerm_mssql_server.mssql_server.id
+    start_ip_address    = "4.16.120.137"
+    end_ip_address      = "4.16.120.137"
+}
+  
