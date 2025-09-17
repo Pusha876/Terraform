@@ -4,5 +4,11 @@ variable "common_tags" {
   default     = {
     environment = "development"
     owner       = "team-azure"
-  }
+  } 
+}
+
+variable "location" {
+  type        = string
+  description = "Azure region to deploy resources in"
+  default     = "westeurope"
 }
