@@ -9,7 +9,7 @@ resource "azurerm_virtual_network" "main" {
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.app_rg.location
   resource_group_name = azurerm_resource_group.app_rg.name
-  tag                 = var.tags
+  tags                 = var.tags
 }
 
 # Subnet
@@ -18,33 +18,11 @@ resource "azurerm_subnet" "internal" {
   resource_group_name  = azurerm_resource_group.app_rg.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.2.0/24"]
+}
 
-# Network Security Group
-
-  Security_rules {
-    name                       = "Allow-HTTP"
-    priority                   = 1002
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "80"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
-
-  Security_rules {
-    name                       = "SSH"
-    priority                   = 1001
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-    }
-    tags = var.tags
+resource "azurerm_subnet_network_security_group_association" "internal_assoc" {
+  subnet_id                 = azurerm_subnet.internal.id
+  network_security_group_id = azurerm_network_security_group.internal_nsg.id
 }
 
 # Public IP
@@ -71,11 +49,11 @@ resource "azurerm_network_interface" "vm_nic" {
 
 resource "azurerm_network_interface_security_group_association" "nsg_association" {
   network_interface_id      = azurerm_network_interface.vm_nic.id
-  network_security_group_id = azurerm_network_security_group.main.id
+  network_security_group_id = azurerm_network_security_group.internal_nsg.id
 }
 
 # Virtual Machine
-resource "azurerm_linux_virtual_machine" "vm" {
+resource "azurerm_linux_virtual_machine" "monitoring-vm" {
   name                = "monitoring-vm"
   resource_group_name = azurerm_resource_group.app_rg.name
   location            = azurerm_resource_group.app_rg.location
@@ -126,4 +104,36 @@ resource "azurerm_linux_virtual_machine" "vm" {
 
     }
     tags = var.tags
+}
+
+# Network Security Group for VM
+resource "azurerm_network_security_group" "internal_nsg" {
+  name                = "internal-nsg"
+  location            = azurerm_resource_group.app_rg.location
+  resource_group_name = azurerm_resource_group.app_rg.name
+  tags                = var.tags
+
+  security_rule {
+    name                       = "Allow-HTTP"
+    priority                   = 1002
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "SSH"
+    priority                   = 1001
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
 }
