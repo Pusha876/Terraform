@@ -204,7 +204,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
   instances           = var.instance_count
   admin_username      = var.admin_username
   custom_data         = base64encode(local.provisioning_script_content)
-  upgrade_mode        = "Automatic"
+  upgrade_mode        = "Manual"
   health_probe_id     = var.is_frontend ? null : azurerm_lb_probe.backend[0].id
   tags                = var.tags
 
@@ -219,15 +219,15 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
     timeout = "PT5M" # 5 minutes
   }
 
-  # Enable automatic repairs for unhealthy VMs
-  dynamic "automatic_instance_repair" {
-    for_each = var.is_frontend ? [] : [1]
-    content {
-      enabled      = true
-      grace_period = "PT30M" # 30 minutes grace period
-      action       = "Replace"
-    }
-  }
+  # Enable automatic repairs for unhealthy VMs - DISABLED until apps are deployed
+  # dynamic "automatic_instance_repair" {
+  #   for_each = var.is_frontend ? [] : [1]
+  #   content {
+  #     enabled      = true
+  #     grace_period = "PT30M" # 30 minutes grace period
+  #     action       = "Replace"
+  #   }
+  # }
 
   # Configure scale-in policy to remove oldest VMs first
   scale_in {
@@ -235,14 +235,14 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
     force_deletion_enabled = false
   }
 
-  # Configure rolling upgrade policy for smoother updates
-  rolling_upgrade_policy {
-    max_batch_instance_percent              = 20
-    max_unhealthy_instance_percent          = 20
-    max_unhealthy_upgraded_instance_percent = 20
-    pause_time_between_batches              = "PT1M"
-    prioritize_unhealthy_instances_enabled  = true
-  }
+  # Configure rolling upgrade policy for smoother updates - DISABLED for Manual mode
+  # rolling_upgrade_policy {
+  #   max_batch_instance_percent              = 20
+  #   max_unhealthy_instance_percent          = 20
+  #   max_unhealthy_upgraded_instance_percent = 20
+  #   pause_time_between_batches              = "PT1M"
+  #   prioritize_unhealthy_instances_enabled  = true
+  # }
 
   # Prevent direct SSH access, use Bastion instead
   disable_password_authentication = true
